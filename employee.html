@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees</title>
+</head>
+<body>
+    <div class="loading">Fetching data...</div>
+</body>
+<script>
+    async function getEmployees(){
+        const fetch_retry = async (url, n) => {
+            try {
+                const empRes= await fetch(url);
+                if(!empRes.ok)
+                    throw new Error("error "+ empRes.status);
+                return empRes;
+            } catch(err) {
+                if (n === 1) {
+                    throw err
+                };
+                return await fetch_retry(url, n - 1);
+            }
+        }
+
+        let employeesRes = await fetch_retry('http://dummy.restapiexample.com/api/v1/employees', 5).then(response => response.json());
+        
+        const employees = employeesRes.data;
+
+        // logic to get the employee with highest salary and printing it
+        let max = {employee_salary:0};
+        employees.forEach(e => e.employee_salary > max.employee_salary && (max = e));
+        console.log(max);
+        document.writeln("Employee with highest salary is "+ max.employee_name + " with salary of " +max.employee_salary );
+
+        document.writeln("<br>");
+       
+        // logic to get the employee with lowest salary and printing it
+        let min = {employee_salary:Infinity};
+        employees.forEach(e => e.employee_salary < min.employee_salary && (min = e));
+        console.log(min);
+        document.writeln("Employee with lowest salary is "+ min.employee_name + " with salary of " +min.employee_salary);
+
+        // worker wont run when served with local file, it needs a server
+        var myWorker = new Worker('worker.js');
+        myWorker.postMessage(employees,"highest");
+        myWorker.postMessage(employees,"lowest");
+        myWorker.onmessage = function(e) {
+            document.write(e.data);
+            console.log('Message received from worker');
+        }
+    }
+    getEmployees();
+</script>
+</html> 
